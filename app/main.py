@@ -6,7 +6,6 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from pathlib import Path
 from typing import List
-from api.endpoints import schedule
 import os
 import httpx
 
@@ -25,9 +24,6 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # 개발 환경 정적 파일 설정
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-
-# API 라우터 등록
-app.include_router(schedule.router, prefix="/api", tags=["schedules"])
 
 # 환경변수 로드
 load_dotenv()
