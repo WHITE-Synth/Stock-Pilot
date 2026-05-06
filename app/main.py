@@ -13,6 +13,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # 파일 경로 설정
 BASE_DIR = Path(__file__).resolve().parent
 
