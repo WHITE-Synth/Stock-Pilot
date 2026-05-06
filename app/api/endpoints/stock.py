@@ -1,6 +1,19 @@
 from fastapi import APIRouter, HTTPException
 import yfinance as yf
 import httpx
+from functools import lru_cache
+import time
+
+cache = {}
+CACHE_TTL = 300  # 5분 캐시
+
+def get_cached(key, fetch_fn):
+    now = time.time()
+    if key in cache and now - cache[key]['time'] < CACHE_TTL:
+        return cache[key]['data']
+    data = fetch_fn()
+    cache[key] = {'data': data, 'time': now}
+    return data
 
 router = APIRouter()
 
@@ -47,17 +60,18 @@ async def get_crypto(coin_id: str):
 @router.get("/index/{ticker}")
 async def get_index(ticker: str):
     try:
-        index = yf.Ticker(ticker)
-        hist = index.history(period="1mo")
-        latest = hist["Close"].iloc[-1]
-        prev = hist["Close"].iloc[-2]
-        change = ((latest - prev) / prev) * 100
-        
-        return {
-            "ticker": ticker,
-            "price": round(latest, 2),
-            "change_percent": round(change, 2),
-            "history": hist["Close"].tail(30).to_dict()
-        }
+        def fetch():
+            index = yf.Ticker(ticker)
+            hist = index.history(period="1mo")
+            latest = hist["Close"].iloc[-1]
+            prev = hist["Close"].iloc[-2]
+            change = ((latest - prev) / prev) * 100
+            return {
+                "ticker": ticker,
+                "price": round(latest, 2),
+                "change_percent": round(change, 2),
+                "history": hist["Close"].tail(30).to_dict()
+            }
+        return get_cached(ticker, fetch)
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"지수를 찾을 수 없습니다: {str(e)}")
